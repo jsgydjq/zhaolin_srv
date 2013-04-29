@@ -35,8 +35,8 @@ urlpatterns = patterns('',
     url(r'^getAppComments/', 'zhaolin.views.get_app_comments'),
     url(r'^postNewAction/', 'zhaolin.views.post_new_action'),
     url(r'^getUserNewsfeedList/', 'zhaolin.views.get_user_newsfeed_list'),
-    url(r'^postUpDownAction/', 'zhaolin.views.views.post_updown_action'),
-    url(r'^postUpDownApp/', 'zhaolin.views.views.post_updown_app'),
+    url(r'^postUpDownAction/', 'zhaolin.views.post_updown_action'),
+    url(r'^postUpDownApp/', 'zhaolin.views.post_updown_app'),
 )
 
 urlpatterns += patterns('',

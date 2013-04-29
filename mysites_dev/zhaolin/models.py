@@ -121,6 +121,7 @@ class AppInfo(models.Model):
             action = self.relatedActions.order_by('-upCount')[0]
             action.ctCount = 1
             action.save()
+            '''
             try:
                 self.collected.action.ctCount = 0
                 self.collected.action.save()
@@ -129,6 +130,7 @@ class AppInfo(models.Model):
                 self.collected.save()
             except:
                 CollectedAction.objects.create(app = self, action = action)
+            '''
 
             user_descript = base64.b64decode(action.comment)
         except:
