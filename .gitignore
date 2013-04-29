@@ -33,3 +33,16 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# png files
+*.png
+
+# pyc files
+*.pyc
+
+# logs 
+logfile.txt
+uwsgi.log
+.inputrc
+*.zip
+gi_app
