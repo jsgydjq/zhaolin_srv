@@ -16,7 +16,7 @@ def update_user(request):
     response['result'] = -1
     try:
         if request.method == 'POST':
-            logger.debug('user info posted: %s', request.raw_post_data)
+            #logger.debug('user info posted: %s', request.raw_post_data)
             req = simplejson.loads(request.raw_post_data)
             renrenId = req.get('renrenId')
             userName = req.get('userName')
@@ -62,7 +62,7 @@ def update_location(request):
     response['result'] = -1
     try:
         if request.method == 'POST':
-            logger.debug('update location, posted: %s', request.raw_post_data)
+            #logger.debug('update location, posted: %s', request.raw_post_data)
             req = simplejson.loads(request.raw_post_data)
             primkey = req.get('primkey')
             try:
@@ -91,27 +91,15 @@ def update_location(request):
             # TODO validate
             friends = UserInfo.objects.filter(renrenId__in=list(valid_renrenIds))
 
-            try:
-                userFollowInfo = user.followInfo
-            except:
-                userFollowInfo = FollowInfo.objects.create(user=user)
-
             for friend in friends:
-                try:
-                    FollowInfo = friend.followInfo
-                except:
-                    FollowInfo = FollowInfo.objects.create(user=friend)
-                try:
-                    userFollowInfo.followed.get(pk=followee.pk)
-                    already = True
-                except:
-                    already = False
-                
+               user.follow(friend)
+               friend.follow(user) 
             response['result'] = 0
     except:
         response['result'] = 1
 
     json = simplejson.dumps(response)
+    logger.debug('response to update location: ' + json)
     return HttpResponse(json)
 
 def share_apps(request):
@@ -166,15 +154,16 @@ def share_apps(request):
             response['result'] = 0
     except:
         response['result'] = 1
-
-    return HttpResponse(simplejson.dumps(response))
+    json = simplejson.dumps(response)
+    logger.debug('response to share apps: ' + json)
+    return HttpResponse(json)
 
 def collect_app(request):
     response = {}
     response['result'] = -1
     try:
         if request.method == 'POST':
-            logger.debug('collect action, posted: %s', request.raw_post_data)
+            #logger.debug('collect action, posted: %s', request.raw_post_data)
             req = simplejson.loads(request.raw_post_data)
             primkey = req.get('primkey', '0')
             appName = req.get('appName', '0')
@@ -202,7 +191,9 @@ def collect_app(request):
     except:
         response['result'] = 1
 
-    return HttpResponse(simplejson.dumps(response))
+    json = simplejson.dumps(response)
+    logger.debug('response to collect: ' + json)
+    return HttpResponse(json)
 
 def get_friend_apps(request):
     response = {}
@@ -264,7 +255,7 @@ def get_nearby_apps(request):
     try:
         if request.method == 'POST':
             req = simplejson.loads(request.raw_post_data)
-            logger.debug("Get nearby, post: " + request.raw_post_data)
+            #logger.debug("Get nearby, post: " + request.raw_post_data)
             location = req.get('location', '0,0').split(',')
             longitude = float(location[1])
             latitude = float(location[0])
@@ -481,35 +472,19 @@ def post_follow_one(request):
     try:
         if request.method == 'POST':
             req = simplejson.loads(request.raw_post_data)
-            flerPrimKey = req.get('flerPrimKey', -1)
-            fleePrimKey = req.get('fleePrimKey', -1)
-            logger.debug('1')
+            flerPrimKey = req.get('flerPrimkey', -1)
+            fleePrimKey = req.get('fleePrimkey', -1)
+            followType = req.get('followType', 0) # 0 for follow, 1 for disfollow
             try:
                 follower = UserInfo.objects.get(pk=flerPrimKey)
                 followee = UserInfo.objects.get(pk=fleePrimKey)
             except:
                 return HttpResponse(simplejson.dumps(response))
-            try:
-                followInfo = follower.followInfo
-            except:
-                logger.debug('6')
-                followInfo = FollowInfo.objects.create(user=follower)
-                logger.debug('7')
-            try:
-                followInfo.followed.get(pk=followee.pk)
-                already = True
-            except:
-                already = False
 
-            if already:
-                logger.debug('2')
-                followInfo.followed.remove(followee)
-
-                logger.debug('3')
+            if followType==0:
+                follower.follow(followee)
             else:
-                logger.debug('4')
-                followInfo.followed.add(followee)
-                logger.debug('5')
+                follower.disfollow(followee)
             response['result'] = 0
     except:
         response['result'] = 1
@@ -610,6 +585,51 @@ def post_new_comment(request):
             NewActionComment.objects.create(action=action, content = content,
                                     poster=poster, receiver=receiver)
                                     
+            response['result'] = 0
+    except:
+        response['result'] = 1
+    return HttpResponse(simplejson.dumps(response))
+
+def post_updown_action(request):
+    response = {}
+    response['result'] = -1
+    try:
+        if request.method == 'POST':
+            req = simplejson.loads(request.raw_post_data)
+            actiPrimkey = req.get('actiPrimkey', -1)
+            upOrDown = req.get('upOrDown', 0) # 0 for up, 1 for down
+            try:
+                action = NewActionDetail.objects.get(pk=actiPrimkey)
+            except:
+                return HttpResponse(simplejson.dumps(response))
+            if upOrDown==0:
+                action.upCount += 1
+            else:
+                action.downCount += 1
+            action.save()
+            response['result'] = 0
+    except:
+        response['result'] = 1
+    return HttpResponse(simplejson.dumps(response))
+
+def post_updown_app(request):
+    response = {}
+    response['result'] = -1
+    try:
+        if request.method == 'POST':
+            req = simplejson.loads(request.raw_post_data)
+            appName = base64.b64encode(req.get('appName', 'NULL').encode('utf-8'))
+            upOrDown = req.get('upOrDown', 0) # 0 for up, 1 for down
+            try:
+                app = AppInfo.objects.get(appname=appName)
+                extInfo = app.externalappinfo
+            except:
+                return HttpResponse(simplejson.dumps(response))
+            if upOrDown==0:
+                extInfo.upCount += 1
+            else:
+                extInfo.downCount += 1
+            extInfo.save()
             response['result'] = 0
     except:
         response['result'] = 1
@@ -806,7 +826,12 @@ def get_user_newsfeed_list(request):
                 user = UserInfo.objects.get(pk=userPrimKey)
             except:
                 return HttpResponse(simplejson.dumps(response))
-
+            
+            try:
+                externalInfo = user.externalInfo
+            except:
+                externalInfo = ExternalUserInfo.objects.create(user = user)
+            externalInfo.updateCollectCount()
             action_brief_list = []
             actions = user.myActions.all().order_by('-timestamp')
             for action in actions:

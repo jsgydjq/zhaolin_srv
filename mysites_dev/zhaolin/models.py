@@ -40,6 +40,32 @@ class UserInfo(models.Model):
             followInfo = self.followInfo
         except:
             followInfo = FollowInfo.objects.create(user=self)
+        try:
+            followInfo.followed.get(pk=followee.pk)
+            already=True
+        except:
+            already=False
+        if not already:
+            followInfo.followed.add(followee)
+            followInfo.save()
+            return True
+        return False
+
+    def disfollow(self, followee):
+        try:
+            followInfo = self.followInfo
+        except:
+            followInfo = FollowInfo.objects.create(user=self)
+        try:
+            followInfo.followed.get(pk=followee.pk)
+            already=True
+        except:
+            already=False
+        if already:
+            followInfo.followed.remove(followee)
+            followInfo.save()
+            return True
+        return False
 
 
 class Collect(models.Model):
@@ -98,6 +124,7 @@ class AppInfo(models.Model):
             try:
                 self.collected.action.ctCount = 0
                 self.collected.action.save()
+                self.collected.save()
                 self.collected.action = action
                 self.collected.save()
             except:
@@ -187,7 +214,6 @@ class NewActionComment(models.Model):
        comment['content'] = self.content
        comment['timestamp'] = str(int(time.mktime(self.timestamp.timetuple()) * 1000))
        return comment
-        
 
 class ExternalAppInfo(models.Model):
     app = models.OneToOneField(AppInfo)

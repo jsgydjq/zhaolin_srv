@@ -46,3 +46,4 @@ uwsgi.log
 .inputrc
 *.zip
 gi_app
+.swp
